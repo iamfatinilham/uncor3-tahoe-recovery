@@ -83,13 +83,13 @@ jobs:
           path: /tmp/${{ env.TAG }}.iso
           compression-level: 0 # No compression to speed up the massive upload
 
-      - name: Publish ISO to GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ env.TAG }}
-          name: ${{ env.TAG }}.iso
-          body: |
-            Automatic build of the latest macOS Tahoe full installer ISO.
-          files: /tmp/${{ env.TAG }}.iso
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#      - name: Publish ISO to GitHub Release
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          tag_name: ${{ env.TAG }}
+#          name: ${{ env.TAG }}.iso
+#          body: |
+#            Automatic build of the latest macOS Tahoe full installer ISO.
+#          files: /tmp/${{ env.TAG }}.iso
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
