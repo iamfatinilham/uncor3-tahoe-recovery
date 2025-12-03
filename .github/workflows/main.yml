@@ -1,0 +1,75 @@
+name: Tahoe Beta (Full ISO) Builder
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1. Free up disk space to prevent "No space left on device" errors
+      - name: Maximize Build Space
+        run: |
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /Users/runner/Library/Android
+          sudo rm -rf /Users/runner/.dotnet
+          
+      - name: Clone gibMacOS
+        run: |
+          git clone https://github.com/corpnewt/gibMacOS.git
+
+      - name: Download macOS Installer (latest beta)
+        run: |
+          python ./gibMacOS/gibMacOS.py -c developer -v Tahoe -m 26 -o /tmp/Tahoe-beta-latest
+
+      - name: Install the assistant
+        run: |
+          sudo installer -pkg /tmp/Tahoe-beta-latest/InstallAssistant.pkg -target /
+          
+      # CRITICAL: Delete the downloaded PKG immediately to save ~12GB of space
+      - name: Clean up PKG
+        run: |
+          rm -rf /tmp/Tahoe-beta-latest
+          echo "Deleted downloaded PKG to save space."
+
+      - name: Generate macOS ISO
+        run: |
+          INSTALLER=$(ls -d /Applications/Install*.app | head -n 1 || true)
+          if [ ! -d "$INSTALLER" ]; then
+            echo "Could not find Install macOS app in /Applications"
+            exit 1
+          fi
+          
+          # Calculate size roughly (14GB fixed to be safe)
+          # We use a sparse image first to save space during creation
+          sudo hdiutil create -o /tmp/Tahoe -size 15000m -volname 'Tahoe' -layout SPUD -fs HFS+J
+          
+          # Mount it
+          sudo hdiutil attach /tmp/Tahoe.dmg -noverify -mountpoint /Volumes/Tahoe
+          
+          echo "Creating install media..."
+          sudo "$INSTALLER/Contents/Resources/createinstallmedia" --volume /Volumes/Tahoe --nointeraction
+
+          # Unmount the volume so we can convert it
+          echo "Unmounting..."
+          MOUNT_POINT=$(ls -d /Volumes/Install* | head -n 1)
+          sudo hdiutil detach "$MOUNT_POINT" -force
+
+          # Convert DMG to ISO (CDR format)
+          echo "Converting to ISO..."
+          hdiutil convert /tmp/Tahoe.dmg -format UDTO -o /tmp/Tahoe.cdr
+          
+          # Rename .cdr to .iso
+          mv /tmp/Tahoe.cdr /tmp/Tahoe.iso
+          
+          # Remove the original DMG to save space for the upload preparation
+          rm /tmp/Tahoe.dmg
+
+      - name: Upload Full ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: macOS-Tahoe-Full-ISO
+          path: /tmp/Tahoe.iso
+          compression-level: 0 # No compression to speed up the massive upload
