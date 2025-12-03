@@ -73,5 +73,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macOS-Tahoe-Full-ISO
-          path: /tmp/Tahoe.iso
+          # FIX: Change the path to match the name created by the 'mv' command above
+          path: /tmp/Tahoe-Full.iso
           compression-level: 0 # No compression to speed up the massive upload
