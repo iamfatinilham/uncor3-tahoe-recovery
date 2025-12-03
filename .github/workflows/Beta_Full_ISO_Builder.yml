@@ -1,4 +1,4 @@
-name: Tahoe Beta (Full ISO) Builder
+name: Latest Beta (Full ISO) Builder
 
 on:
   workflow_dispatch:
@@ -34,7 +34,7 @@ jobs:
           rm -rf /tmp/Tahoe-beta-latest
           echo "Deleted downloaded PKG to save space."
 
-      - name: Generate macOS ISO (Revised Size - 20GB)
+      - name: Generate macOS ISO (Final Fix)
         run: |
           INSTALLER=$(ls -d /Applications/Install*.app | head -n 1 || true)
           if [ ! -d "$INSTALLER" ]; then
@@ -42,7 +42,7 @@ jobs:
             exit 1
           fi
           
-          # 1. FINAL SIZE ADJUSTMENT: Setting size to 20 GB (20000 MB) for safety.
+          # Final safe size: 20 GB (20000 MB)
           SAFE_SIZE_MB=20000 
           
           # Create a fixed size DMG (20 GB)
@@ -52,7 +52,6 @@ jobs:
           sudo hdiutil attach /tmp/Tahoe.dmg -noverify -mountpoint /Volumes/Tahoe
           
           echo "Creating install media..."
-          # This command should now succeed on the 20 GB volume
           sudo "$INSTALLER/Contents/Resources/createinstallmedia" --volume /Volumes/Tahoe --nointeraction
 
           # Unmount the volume so we can convert it
@@ -60,15 +59,15 @@ jobs:
           MOUNT_POINT=$(ls -d /Volumes/Install* | head -n 1)
           sudo hdiutil detach "$MOUNT_POINT" -force
 
-          # Convert DMG to ISO (CDR format)
+          # Convert DMG to ISO (CDR format). This file will be owned by root.
           echo "Converting to ISO..."
           hdiutil convert /tmp/Tahoe.dmg -format UDTO -o /tmp/Tahoe.cdr
           
-          # Rename .cdr to .iso
-          mv /tmp/Tahoe.cdr /tmp/Tahoe-Full.iso
+          # FIX: Use sudo to rename the root-owned file
+          sudo mv /tmp/Tahoe.cdr /tmp/Tahoe-Full.iso
           
-          # Remove the original DMG to save space for the upload preparation
-          rm /tmp/Tahoe.dmg
+          # Clean up the original root-owned DMG file
+          sudo rm /tmp/Tahoe.dmg
           
       - name: Upload Full ISO
         uses: actions/upload-artifact@v4
