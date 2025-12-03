@@ -81,7 +81,7 @@ jobs:
           name: ${{ env.TAG }}
           # FIX: Change the path to match the name created by the 'mv' command above
           path: /tmp/${{ env.TAG }}.iso
-          compression-level: 0 # No compression to speed up the massive upload
+          compression-level: 9
 
 #      - name: Publish ISO to GitHub Release
 #        uses: softprops/action-gh-release@v2
