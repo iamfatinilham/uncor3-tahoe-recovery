@@ -34,7 +34,7 @@ jobs:
           rm -rf /tmp/Tahoe-beta-latest
           echo "Deleted downloaded PKG to save space."
 
-      - name: Generate macOS ISO
+      - name: Generate macOS ISO (Revised Size)
         run: |
           INSTALLER=$(ls -d /Applications/Install*.app | head -n 1 || true)
           if [ ! -d "$INSTALLER" ]; then
@@ -42,19 +42,24 @@ jobs:
             exit 1
           fi
           
-          # Calculate size roughly (14GB fixed to be safe)
-          # We use a sparse image first to save space during creation
-          sudo hdiutil create -o /tmp/Tahoe -size 15000m -volname 'Tahoe' -layout SPUD -fs HFS+J
+          # 1. DELETE OLD SIZE CALCULATION. The current installer requires ~14 GB.
+          # We hardcode a safe size of 16 GB (16000 MB) to ensure enough space.
+          SAFE_SIZE_MB=16000 
+          
+          # Create a fixed size DMG (16 GB)
+          sudo hdiutil create -o /tmp/Tahoe -size ${SAFE_SIZE_MB}m -volname 'Tahoe' -layout SPUD -fs HFS+J
           
           # Mount it
           sudo hdiutil attach /tmp/Tahoe.dmg -noverify -mountpoint /Volumes/Tahoe
           
           echo "Creating install media..."
+          # This command requires the 16 GB volume to successfully write the media
           sudo "$INSTALLER/Contents/Resources/createinstallmedia" --volume /Volumes/Tahoe --nointeraction
 
           # Unmount the volume so we can convert it
           echo "Unmounting..."
           MOUNT_POINT=$(ls -d /Volumes/Install* | head -n 1)
+          # Use -force just in case
           sudo hdiutil detach "$MOUNT_POINT" -force
 
           # Convert DMG to ISO (CDR format)
@@ -62,7 +67,7 @@ jobs:
           hdiutil convert /tmp/Tahoe.dmg -format UDTO -o /tmp/Tahoe.cdr
           
           # Rename .cdr to .iso
-          mv /tmp/Tahoe.cdr /tmp/Tahoe.iso
+          mv /tmp/Tahoe.cdr /tmp/Tahoe-Full.iso
           
           # Remove the original DMG to save space for the upload preparation
           rm /tmp/Tahoe.dmg
