@@ -68,11 +68,28 @@ jobs:
           
           # Clean up the original root-owned DMG file
           sudo rm /tmp/Tahoe.dmg
-          
+
+      - name: Generate dynamic tag
+        id: tagger
+        run: echo "TAG=tahoe-$(date +'%Y-%m-%d-%H-%M-%S')_run_${{ github.run_number }}" >> $GITHUB_ENV
+      - name: Rename ISO using the tag
+        run: mv "/tmp/Tahoe-Full.iso" "/tmp/${TAG}.iso"
+
       - name: Upload Full ISO
         uses: actions/upload-artifact@v4
         with:
-          name: macOS-Tahoe-Full-ISO
+          name: ${{ env.TAG }}
           # FIX: Change the path to match the name created by the 'mv' command above
-          path: /tmp/Tahoe-Full.iso
-          compression-level: 0 # No compression to speed up the massive upload
+          path: /tmp/${{ env.TAG }}.iso
+          compression-level: 9
+
+#      - name: Publish ISO to GitHub Release
+#        uses: softprops/action-gh-release@v2
+#        with:
+#          tag_name: ${{ env.TAG }}
+#          name: ${{ env.TAG }}.iso
+#          body: |
+#            Automatic build of the latest macOS Tahoe full installer ISO.
+#          files: /tmp/${{ env.TAG }}.iso
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
